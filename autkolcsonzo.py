@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
+from datetime import date
 
-# Absztrakt Auto osztály
+# --- Absztrakt autó osztály ---
 class Auto(ABC):
     def __init__(self, rendszam, tipus, berleti_dij):
         self.rendszam = rendszam
@@ -11,95 +12,89 @@ class Auto(ABC):
     def auto_info(self):
         pass
 
-# Személyautó osztály
+
+# --- Személyautó osztály ---
 class Szemelyauto(Auto):
     def __init__(self, rendszam, tipus, berleti_dij, ulesek_szama):
         super().__init__(rendszam, tipus, berleti_dij)
         self.ulesek_szama = ulesek_szama
 
     def auto_info(self):
-        return f"Személyautó - Rendszám: {self.rendszam}, Típus: {self.tipus}, Ülések száma: {self.ulesek_szama}, Díj: {self.berleti_dij} Ft/nap"
+        return f"Személyautó | Rendszám: {self.rendszam}, Típus: {self.tipus}, Ülések: {self.ulesek_szama}, Díj: {self.berleti_dij} Ft/nap"
 
-# Teherautó osztály
+
+# --- Teherautó osztály ---
 class Teherauto(Auto):
     def __init__(self, rendszam, tipus, berleti_dij, teherbiras_kg):
         super().__init__(rendszam, tipus, berleti_dij)
         self.teherbiras_kg = teherbiras_kg
 
     def auto_info(self):
-        return f"Teherautó - Rendszám: {self.rendszam}, Típus: {self.tipus}, Teherbírás: {self.teherbiras_kg} kg, Díj: {self.berleti_dij} Ft/nap"
+        return f"Teherautó | Rendszám: {self.rendszam}, Típus: {self.tipus}, Teherbírás: {self.teherbiras_kg} kg, Díj: {self.berleti_dij} Ft/nap"
 
-# Bérlés osztály
+
+# --- Bérlés osztály ---
 class Berles:
-    def __init__(self, auto: Auto, datum: str):
+    def __init__(self, auto, datum: date):
         self.auto = auto
         self.datum = datum
 
-    def berles_info(self):
-        return f"{self.auto.rendszam} - {self.datum} - {self.auto.berleti_dij} Ft"
+    def __str__(self):
+        return f"{self.auto.rendszam} | {self.auto.tipus} | {self.datum} | {self.auto.berleti_dij} Ft"
 
-# Autókölcsönző
+
+# --- Autókölcsönző osztály ---
 class Autokolcsonzo:
     def __init__(self, nev):
         self.nev = nev
         self.autok = []
         self.berlesek = []
 
-        # 5 személyautó
-        self.autok.append(Szemelyauto("ABC-123", "Toyota Corolla", 10000, 5))
-        self.autok.append(Szemelyauto("DEF-456", "Honda Civic", 11000, 5))
-        self.autok.append(Szemelyauto("GHI-789", "Mazda 3", 10500, 5))
-        self.autok.append(Szemelyauto("JKL-321", "Ford Focus", 9500, 5))
-        self.autok.append(Szemelyauto("MNO-654", "Opel Astra", 9900, 5))
-
-        # 5 teherautó
-        self.autok.append(Teherauto("PQR-987", "Mercedes Sprinter", 15000, 1500))
-        self.autok.append(Teherauto("STU-159", "Ford Transit", 14000, 1300))
-        self.autok.append(Teherauto("VWX-753", "Iveco Daily", 16000, 1700))
-        self.autok.append(Teherauto("YZA-852", "Renault Master", 14500, 1400))
-        self.autok.append(Teherauto("BCD-951", "Volkswagen Crafter", 15500, 1600))
-
-        # Előre rögzített 4 bérlés
-        self.berlesek.append(Berles(self.autok[0], "2025-04-01"))
-        self.berlesek.append(Berles(self.autok[5], "2025-04-02"))
-        self.berlesek.append(Berles(self.autok[3], "2025-04-03"))
-        self.berlesek.append(Berles(self.autok[7], "2025-04-04"))
-
-    def listaz_autok(self):
-        print("\nElérhető autók:")
-        for auto in self.autok:
-            if not any(b.auto == auto for b in self.berlesek):
-                print(auto.auto_info())
+    def auto_hozzaadas(self, auto):
+        self.autok.append(auto)
 
     def auto_berlese(self, rendszam, datum):
-        for auto in self.autok:
-            if auto.rendszam == rendszam:
-                if any(b.auto == auto for b in self.berlesek):
-                    print("Ez az autó már ki van bérelve!")
-                    return
-                self.berlesek.append(Berles(auto, datum))
-                print(f"Sikeres bérlés! Ár: {auto.berleti_dij} Ft")
-                return
-        print("Nincs ilyen rendszámú autó!")
+        auto = next((a for a in self.autok if a.rendszam == rendszam), None)
+        if not auto:
+            return "❌ Nincs ilyen rendszámú autó."
 
-    def berles_lemondasa(self, rendszam):
+        if any(b.auto.rendszam == rendszam and b.datum == datum for b in self.berlesek):
+            return "❌ Az autó már bérlés alatt áll ezen a napon."
+
+        uj_berles = Berles(auto, datum)
+        self.berlesek.append(uj_berles)
+        return f"✅ Bérlés sikeres. Ár: {auto.berleti_dij} Ft"
+
+    def berles_lemondas(self, rendszam, datum):
         for berles in self.berlesek:
-            if berles.auto.rendszam == rendszam:
+            if berles.auto.rendszam == rendszam and berles.datum == datum:
                 self.berlesek.remove(berles)
-                print("Bérlés lemondva.")
-                return
-        print("Nincs ilyen bérlés!")
+                return "✅ Bérlés lemondva."
+        return "❌ Nem található ilyen bérlés."
 
     def listaz_berlesek(self):
-        print("\nAktuális bérlések:")
         if not self.berlesek:
-            print("Nincs aktív bérlés.")
-        for berles in self.berlesek:
-            print(berles.berles_info())
+            return "ℹ️ Nincsenek aktív bérlések."
+        return "\n".join(str(b) for b in self.berlesek)
 
-# Parancssoros felhasználói felület
+    def listaz_autok(self):
+        return "\n".join(a.auto_info() for a in self.autok)
+
+
+# --- Konzolos felhasználói interfész ---
 def main():
-    kolcsonzo = Autokolcsonzo("City Rent")
+    kolcsonzo = Autokolcsonzo("CityCar Rent")
+
+    # Előre feltöltött autók
+    kolcsonzo.auto_hozzaadas(Szemelyauto("ABC123", "Toyota Corolla", 10000, 5))
+    kolcsonzo.auto_hozzaadas(Teherauto("DEF456", "Ford Transit", 15000, 1200))
+    kolcsonzo.auto_hozzaadas(Szemelyauto("GHI789", "VW Golf", 11000, 5))
+
+    # Előre feltöltött bérlések
+    kolcsonzo.auto_berlese("ABC123", date(2025, 4, 13))
+    kolcsonzo.auto_berlese("DEF456", date(2025, 4, 14))
+    kolcsonzo.auto_berlese("GHI789", date(2025, 4, 15))
+    kolcsonzo.auto_berlese("ABC123", date(2025, 4, 16))
 
     while True:
         print("\n--- AUTÓKÖLCSÖNZŐ RENDSZER ---")
@@ -108,24 +103,43 @@ def main():
         print("3. Bérlés lemondása")
         print("4. Aktuális bérlések listázása")
         print("0. Kilépés")
-        valasztas = input("Választás: ")
+        valasz = input("Választás: ")
 
-        if valasztas == "1":
-            kolcsonzo.listaz_autok()
-        elif valasztas == "2":
-            rendszam = input("Add meg a rendszámot: ")
-            datum = input("Add meg a dátumot (ÉÉÉÉ-HH-NN): ")
-            kolcsonzo.auto_berlese(rendszam, datum)
-        elif valasztas == "3":
-            rendszam = input("Add meg a rendszámot: ")
-            kolcsonzo.berles_lemondasa(rendszam)
-        elif valasztas == "4":
-            kolcsonzo.listaz_berlesek()
-        elif valasztas == "0":
-            print("Kilépés...")
+        if valasz == "1":
+            print("\n-- Elérhető autók --")
+            print(kolcsonzo.listaz_autok())
+
+        elif valasz == "2":
+            rendszam = input("Rendszám: ").upper()
+            datum = input("Dátum (ÉÉÉÉ-HH-NN): ")
+            try:
+                ev, ho, nap = map(int, datum.split("-"))
+                datum_obj = date(ev, ho, nap)
+                print(kolcsonzo.auto_berlese(rendszam, datum_obj))
+            except ValueError:
+                print("❌ Hibás dátumformátum.")
+
+        elif valasz == "3":
+            rendszam = input("Rendszám: ").upper()
+            datum = input("Dátum (ÉÉÉÉ-HH-NN): ")
+            try:
+                ev, ho, nap = map(int, datum.split("-"))
+                datum_obj = date(ev, ho, nap)
+                print(kolcsonzo.berles_lemondas(rendszam, datum_obj))
+            except ValueError:
+                print("❌ Hibás dátumformátum.")
+
+        elif valasz == "4":
+            print("\n-- Aktuális bérlések --")
+            print(kolcsonzo.listaz_berlesek())
+
+        elif valasz == "0":
+            print("👋 Viszlát!")
             break
+
         else:
-            print("Érvénytelen választás!")
+            print("❗ Érvénytelen opció.")
+
 
 if __name__ == "__main__":
     main()
